@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>令和8年度 小金井市一般会計予算ダッシュボード</title>
+<style>
+:root {
+  --primary: #2563EB;
+  --primary-light: #DBEAFE;
+  --accent: #059669;
+  --accent-light: #D1FAE5;
+  --warn: #D97706;
+  --danger: #DC2626;
+  --text: #1E293B;
+  --muted: #64748B;
+  --border: #E2E8F0;
+  --bg: #F8FAFC;
+  --card: #FFFFFF;
+}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans','Meiryo',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;}
+
+.site-header{background:linear-gradient(135deg,#1D4ED8 0%,#0891B2 100%);color:white;padding:28px 24px 22px;}
+.site-header .inner{max-width:1080px;margin:0 auto;}
+.badge{display:inline-block;background:rgba(255,255,255,.2);padding:3px 10px;border-radius:20px;font-size:12px;margin-bottom:8px;}
+.site-header h1{font-size:clamp(17px,3vw,24px);font-weight:700;margin-bottom:4px;}
+.site-header p{font-size:13px;opacity:.85;}
+
+main{max-width:1080px;margin:0 auto;padding:24px 16px 56px;}
+
+/* KPI */
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-bottom:28px;}
+.kpi-card{background:var(--card);border-radius:14px;padding:20px 20px 16px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.05);position:relative;overflow:hidden;}
+.kpi-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;}
+.kpi-card.blue::before{background:#2563EB;}
+.kpi-card.teal::before{background:#0891B2;}
+.kpi-card.green::before{background:#059669;}
+.kpi-card.orange::before{background:#D97706;}
+.kpi-label{font-size:11px;color:var(--muted);font-weight:700;letter-spacing:.04em;margin-bottom:6px;text-transform:uppercase;}
+.kpi-value{font-size:clamp(22px,4vw,30px);font-weight:700;line-height:1.1;}
+.kpi-unit{font-size:14px;font-weight:400;color:var(--muted);margin-left:2px;}
+.kpi-sub{font-size:12px;color:var(--muted);margin-top:4px;}
+.kpi-delta{display:inline-block;font-size:12px;font-weight:700;padding:2px 9px;border-radius:20px;margin-top:6px;}
+.kpi-delta.up{background:#D1FAE5;color:#065F46;}
+.kpi-delta.down{background:#FEE2E2;color:#991B1B;}
+
+/* Section title */
+.sec-title{font-size:15px;font-weight:700;color:var(--text);margin-bottom:14px;padding-left:10px;border-left:4px solid var(--primary);display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.sec-note{font-size:12px;font-weight:400;color:var(--muted);}
+
+/* Chart layout */
+.chart-row{display:grid;gap:20px;margin-bottom:28px;}
+.chart-row.two{grid-template-columns:1fr 1fr;}
+@media(max-width:680px){.chart-row.two{grid-template-columns:1fr;}}
+.chart-card{background:var(--card);border-radius:14px;padding:22px;border:1px solid var(--border);box-shadow:0 1px 4px rgba(0,0,0,.05);}
+.chart-card h3{font-size:14px;font-weight:700;margin-bottom:3px;}
+.chart-desc{font-size:12px;color:var(--muted);margin-bottom:14px;}
+canvas{display:block;}
+
+/* Tooltip */
+.tooltip-box{
+  position:fixed;
+  background:rgba(15,23,42,.88);
+  color:white;
+  padding:8px 12px;
+  border-radius:8px;
+  font-size:12px;
+  pointer-events:none;
+  white-space:nowrap;
+  display:none;
+  z-index:9999;
+  line-height:1.7;
+}
+
+/* Finance explanation */
+.zaigen-explain{display:flex;flex-direction:column;gap:10px;}
+.zaigen-row{display:flex;align-items:flex-start;gap:10px;padding:11px 12px;border-radius:8px;}
+.zaigen-dot{width:11px;height:11px;min-width:11px;border-radius:3px;margin-top:3px;}
+.zaigen-row-title{font-size:13px;font-weight:700;}
+.zaigen-row-desc{font-size:12px;color:var(--muted);margin-top:2px;}
+
+/* Per capita grid */
+.percap-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px;}
+.pc-item{background:var(--bg);border-radius:10px;padding:12px 14px;border:1px solid var(--border);}
+.pc-kan{font-size:11px;font-weight:700;color:var(--muted);margin-bottom:4px;}
+.pc-val{font-size:15px;font-weight:700;}
+.pc-bar-bg{height:4px;background:var(--border);border-radius:2px;margin-top:7px;overflow:hidden;}
+.pc-bar-fill{height:100%;border-radius:2px;}
+
+/* Legend */
+.legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+.legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted);}
+.legend-dot{width:10px;height:10px;border-radius:3px;flex-shrink:0;}
+
+/* New project cards */
+.shinki-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(280px,1fr));gap:12px;}
+.shinki-card{border-radius:10px;padding:14px 16px;border:1px solid var(--border);background:var(--card);transition:box-shadow .15s;}
+.shinki-card:hover{box-shadow:0 4px 12px rgba(0,0,0,.08);}
+.shinki-header{display:flex;align-items:flex-start;justify-content:space-between;gap:8px;margin-bottom:6px;}
+.shinki-name{font-size:13px;font-weight:700;line-height:1.4;}
+.shinki-amt{font-size:12px;font-weight:700;white-space:nowrap;padding:2px 8px;border-radius:12px;}
+.shinki-tag{display:inline-block;font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-bottom:5px;}
+.shinki-desc{font-size:12px;color:var(--muted);line-height:1.5;}
+
+/* Stacked legend */
+.stack-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;}
+.stack-legend-item{display:flex;align-items:center;gap:5px;font-size:12px;}
+.stack-legend-dot{width:12px;height:12px;border-radius:3px;}
+
+footer{background:var(--card);border-top:1px solid var(--border);padding:20px;text-align:center;font-size:12px;color:var(--muted);}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="inner">
+    <div class="badge">小金井市 公式予算データ使用</div>
+    <h1>令和8年度 一般会計予算ダッシュボード</h1>
+    <p>市民の皆さんに、予算の使い道をわかりやすくお伝えします。</p>
+  </div>
+</header>
+
+<main>
+
+  <!-- KPI -->
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">令和8年度 総予算額</div>
+      <div class="kpi-value">546<span class="kpi-unit">億円</span></div>
+      <div class="kpi-sub">54,600,000千円</div>
+      <div class="kpi-delta up">前年度比 ＋4.2%</div>
+    </div>
+    <div class="kpi-card teal">
+      <div class="kpi-label">前年度（R7）との差</div>
+      <div class="kpi-value">＋22.2<span class="kpi-unit">億円</span></div>
+      <div class="kpi-sub">土木費・民生費が主な増加要因</div>
+      <div class="kpi-delta up">＋2,218,099千円</div>
+    </div>
+    <div class="kpi-card green">
+      <div class="kpi-label">市民1人あたりの予算</div>
+      <div class="kpi-value">45.5<span class="kpi-unit">万円</span></div>
+      <div class="kpi-sub">（人口約12万人で試算）</div>
+      <div class="kpi-delta up">前年度比 ＋1.8万円</div>
+    </div>
+    <div class="kpi-card orange">
+      <div class="kpi-label">最大の歳出分野</div>
+      <div class="kpi-value">民生費</div>
+      <div class="kpi-sub">290億円・全体の53.2%</div>
+      <div class="kpi-delta up">社会保障・子育て支援</div>
+    </div>
+  </div>
+
+  <!-- 歳出内訳 -->
+  <div class="sec-title">📊 歳出の内訳 <span class="sec-note">どの分野にいくら使われているか</span></div>
+  <div class="chart-row two">
+    <div class="chart-card">
+      <h3>分野別歳出（令和8年度）</h3>
+      <div class="chart-desc">各分野の割合。グラフにカーソルを当てると詳細が表示されます。</div>
+      <canvas id="donutCanvas" width="420" height="280" style="width:100%;height:280px;"></canvas>
+      <div class="legend" id="donutLegend"></div>
+    </div>
+    <div class="chart-card">
+      <h3>分野別 予算額（億円）</h3>
+      <div class="chart-desc">金額の大きい順に並べています。</div>
+      <canvas id="hbarCanvas" width="420" height="340" style="width:100%;height:340px;"></canvas>
+    </div>
+  </div>
+
+  <!-- 前年比 -->
+  <div class="sec-title">📈 前年度との比較 <span class="sec-note">令和7年度と令和8年度の増減</span></div>
+  <div class="chart-row">
+    <div class="chart-card">
+      <h3>分野別 前年度比 増減額（百万円）</h3>
+      <div class="chart-desc">青は増加、赤は減少。土木費の大幅増は道路・区画整理工事によるものです。</div>
+      <canvas id="diffCanvas" width="900" height="300" style="width:100%;height:300px;"></canvas>
+    </div>
+  </div>
+
+  <!-- 財源内訳 -->
+  <div class="sec-title">💰 歳入（収入）の内訳 <span class="sec-note">予算の財源はどこから来るか</span></div>
+  <div class="chart-row two">
+    <div class="chart-card">
+      <h3>財源の内訳（令和8年度）</h3>
+      <div class="chart-desc">一般財源（市税など）が約58%、国・都の補助金が約38%。</div>
+      <canvas id="zaigenCanvas" width="420" height="280" style="width:100%;height:280px;"></canvas>
+      <div class="legend" id="zaigenLegend"></div>
+    </div>
+    <div class="chart-card">
+      <h3>財源のしくみをわかりやすく</h3>
+      <div class="chart-desc">各財源の意味をかんたんに解説します。</div>
+      <div class="zaigen-explain">
+        <div class="zaigen-row" style="background:#EFF6FF;">
+          <div class="zaigen-dot" style="background:#2563EB;"></div>
+          <div><div class="zaigen-row-title">一般財源（31,639百万円 / 57.9%）</div>
+          <div class="zaigen-row-desc">市税（市民税・固定資産税など）や地方交付税が主な財源。市が自由に使い道を決められます。</div></div>
+        </div>
+        <div class="zaigen-row" style="background:#F0FDF4;">
+          <div class="zaigen-dot" style="background:#059669;"></div>
+          <div><div class="zaigen-row-title">国都支出金（20,713百万円 / 37.9%）</div>
+          <div class="zaigen-row-desc">国や東京都から特定目的のために交付される補助金。社会保障・教育などに使われます。</div></div>
+        </div>
+        <div class="zaigen-row" style="background:#FFFBEB;">
+          <div class="zaigen-dot" style="background:#D97706;"></div>
+          <div><div class="zaigen-row-title">その他（1,427百万円 / 2.6%）</div>
+          <div class="zaigen-row-desc">使用料・手数料・財産収入などの自主財源。</div></div>
+        </div>
+        <div class="zaigen-row" style="background:#FFF1F2;">
+          <div class="zaigen-dot" style="background:#DC2626;"></div>
+          <div><div class="zaigen-row-title">地方債（821百万円 / 1.5%）</div>
+          <div class="zaigen-row-desc">市が発行する借入金。大規模施設整備などに活用し、将来世代と費用を分かち合います。</div></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 1人あたり -->
+  <div class="sec-title">👤 市民1人あたりの換算 <span class="sec-note">人口12万人で試算</span></div>
+  <div class="chart-card" style="margin-bottom:28px;">
+    <h3 style="margin-bottom:4px;">分野別 市民1人あたりの予算額</h3>
+    <div class="chart-desc">あなたと市が1年間で使うお金の内訳（試算値）。</div>
+    <div class="percap-grid" id="percapGrid"></div>
+  </div>
+
+  <!-- R7 vs R8 -->
+  <div class="sec-title">🔄 令和7年度・令和8年度 並列比較 <span class="sec-note">主要分野の2年間を比較</span></div>
+  <div class="chart-card" style="margin-bottom:28px;">
+    <h3>分野別 予算額の推移（R7 vs R8）</h3>
+    <div class="chart-desc">灰色がR7、カラーがR8。各分野で前年度との比較ができます。</div>
+    <canvas id="compareCanvas" width="900" height="300" style="width:100%;height:300px;"></canvas>
+  </div>
+
+  <!-- ===== 経年トレンド ===== -->
+  <div class="sec-title">📅 予算総額の経年推移 <span class="sec-note">令和5〜8年度（4か年）</span></div>
+  <div class="chart-row two">
+    <div class="chart-card">
+      <h3>予算総額の推移（R5〜R8）</h3>
+      <div class="chart-desc">4年間の総予算額の変化。折れ線と面グラフで傾向を表示します。</div>
+      <canvas id="trendCanvas" width="500" height="260" style="width:100%;height:260px;"></canvas>
+    </div>
+    <div class="chart-card">
+      <h3>主要4分野の推移（R5〜R8）</h3>
+      <div class="chart-desc">民生費・教育費・土木費・衛生費の経年変化を比較します。</div>
+      <canvas id="trendKanCanvas" width="500" height="260" style="width:100%;height:260px;"></canvas>
+      <div class="legend" id="trendKanLegend"></div>
+    </div>
+  </div>
+
+  <!-- ===== 性質別経費 ===== -->
+  <div class="sec-title">🏗️ 歳出の性質別分類 <span class="sec-note">義務的・投資的・その他の内訳</span></div>
+  <div class="chart-row two">
+    <div class="chart-card">
+      <h3>性質別 経年推移（R5〜R8）</h3>
+      <div class="chart-desc">積み上げ棒グラフで義務的・投資的・その他の構成比の変化を表示。</div>
+      <canvas id="seishitsuCanvas" width="500" height="260" style="width:100%;height:260px;"></canvas>
+      <div class="stack-legend">
+        <div class="stack-legend-item"><div class="stack-legend-dot" style="background:#2563EB;"></div>義務的経費（人件費・扶助費・公債費）</div>
+        <div class="stack-legend-item"><div class="stack-legend-dot" style="background:#F59E0B;"></div>投資的経費（工事・建設）</div>
+        <div class="stack-legend-item"><div class="stack-legend-dot" style="background:#6EE7B7;"></div>その他の経費（物件費・補助費等）</div>
+      </div>
+    </div>
+    <div class="chart-card">
+      <h3>令和8年度 性質別の内訳</h3>
+      <div class="chart-desc">義務的経費とは「削れない支出」のこと。その比率が高いほど予算の硬直化が進みます。</div>
+      <canvas id="seishitsuDonutCanvas" width="420" height="220" style="width:100%;height:220px;"></canvas>
+      <div style="display:flex;flex-direction:column;gap:8px;margin-top:12px;">
+        <div style="padding:10px 12px;background:#EFF6FF;border-radius:8px;font-size:12px;">
+          <b style="color:#2563EB;">義務的経費 36.9%</b> — 人件費・扶助費・公債費。法令等で支出が義務づけられており、削減が難しい経費です。
+        </div>
+        <div style="padding:10px 12px;background:#FFFBEB;border-radius:8px;font-size:12px;">
+          <b style="color:#D97706;">投資的経費 2.7%</b> — 道路・公共施設の整備など。将来への投資ですが、財政余力に左右されます。
+        </div>
+        <div style="padding:10px 12px;background:#F0FDF4;border-radius:8px;font-size:12px;">
+          <b style="color:#059669;">その他の経費 60.4%</b> — 委託料・補助費・繰出金など。サービス水準の維持に使われます。
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 主要新規事業 ===== -->
+  <div class="sec-title">🆕 令和8年度 主要新規事業 <span class="sec-note">新たに始まる15の取り組み</span></div>
+  <div class="chart-card" style="margin-bottom:28px;">
+    <h3 style="margin-bottom:4px;">令和8年度から新たに始まる事業</h3>
+    <div class="chart-desc">JSON突合により抽出した新規事業。金額の大きい順に並べています。</div>
+    <div class="shinki-grid" id="shinkiGrid"></div>
+  </div>
+
+</main>
+
+<footer>
+  <p>データ出典：小金井市 令和8年度一般会計予算書（事項別明細書）｜人口は約12万人で試算しています。</p>
+  <p style="margin-top:5px;">このダッシュボードは市民向け情報提供のために作成されました。</p>
+</footer>
+
+<!-- Tooltip -->
+<div class="tooltip-box" id="tooltip"></div>
+
+<script>
+// ============================================================
+// データ
+// ============================================================
+const KANS = ['議会費','総務費','民生費','衛生費','労働費','農林水産業費','商工費','土木費','消防費','教育費','公債費','諸支出金','予備費'];
+const R8 = [372722,5691965,29050947,5094899,15352,35852,227423,4595425,1686529,5824012,1915065,36462,53347];
+const R7 = [376740,6075990,28028251,4780188,14647,42270,214168,3331981,1621688,5858606,1972682,13941,50749];
+const ZAIGEN_LABELS = ['一般財源','国都支出金','その他','地方債'];
+const ZAIGEN_VALUES = [31638882,20712683,1427235,821200];
+const POPULATION = 120000;
+const COLORS = ['#94A3B8','#6366F1','#2563EB','#0891B2','#0D9488','#16A34A','#65A30D','#CA8A04','#EA580C','#DC2626','#9333EA','#DB2777','#CBD5E1'];
+const ZAIGEN_COLORS = ['#2563EB','#059669','#D97706','#DC2626'];
+
+// ============================================================
+// Tooltip
+// ============================================================
+const tip = document.getElementById('tooltip');
+function showTip(e, html) {
+  tip.innerHTML = html;
+  tip.style.display = 'block';
+  moveTip(e);
+}
+function moveTip(e) {
+  const x = e.clientX, y = e.clientY;
+  const tw = tip.offsetWidth, th = tip.offsetHeight;
+  tip.style.left = (x + 14) + 'px';
+  tip.style.top = (y - th/2) + 'px';
+}
+function hideTip() { tip.style.display = 'none'; }
+
+// ============================================================
+// Utility
+// ============================================================
+function fmtOku(v) { return (v/100000).toFixed(1) + '億円'; }
+function fmtM(v) { return (v/1000).toFixed(0) + 'M'; }
+
+// ============================================================
+// Donut chart (歳出分野別)
+// ============================================================
+(function() {
+  const c = document.getElementById('donutCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  function resize() {
+    const rect = c.getBoundingClientRect();
+    c.width = rect.width * dpr;
+    c.height = 280 * dpr;
+  }
+  resize();
+  const total = R8.reduce((a,b)=>a+b,0);
+  const cx_ratio = 0.5, cy_ratio = 0.5;
+
+  // Legend
+  const legendEl = document.getElementById('donutLegend');
+  KANS.forEach((k,i) => {
+    const pct = (R8[i]/total*100).toFixed(1);
+    const div = document.createElement('div');
+    div.className = 'legend-item';
+    div.innerHTML = `<div class="legend-dot" style="background:${COLORS[i]}"></div>${k} ${pct}%`;
+    legendEl.appendChild(div);
+  });
+
+  function draw() {
+    const W = c.width, H = c.height;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const cx = W*cx_ratio, cy = H*cy_ratio;
+    const R = Math.min(cx, cy) * 0.82;
+    const ri = R * 0.55;
+    let angle = -Math.PI/2;
+    const slices = [];
+    R8.forEach((v,i) => {
+      const span = v/total * Math.PI*2;
+      slices.push({start:angle, end:angle+span, i});
+      ctx.beginPath();
+      ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,R,angle,angle+span);
+      ctx.closePath();
+      ctx.fillStyle = COLORS[i];
+      ctx.fill();
+      angle += span;
+    });
+    // hole
+    ctx.beginPath();
+    ctx.arc(cx,cy,ri,0,Math.PI*2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    // center text
+    ctx.fillStyle = '#1E293B';
+    ctx.font = `bold ${Math.round(R*0.22)}px Meiryo,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('546億円', cx, cy-R*0.07);
+    ctx.font = `${Math.round(R*0.13)}px Meiryo,sans-serif`;
+    ctx.fillStyle = '#64748B';
+    ctx.fillText('総予算', cx, cy+R*0.14);
+    return {cx,cy,R,ri,slices};
+  }
+
+  let state = draw();
+
+  window.addEventListener('resize', () => { resize(); state = draw(); });
+
+  c.addEventListener('mousemove', e => {
+    const rect = c.getBoundingClientRect();
+    const mx = (e.clientX - rect.left) * dpr;
+    const my = (e.clientY - rect.top) * dpr;
+    const {cx,cy,R,ri,slices} = state;
+    const dx = mx-cx, dy = my-cy, dist = Math.sqrt(dx*dx+dy*dy);
+    if (dist < ri || dist > R) { hideTip(); return; }
+    let a = Math.atan2(dy,dx);
+    if (a < -Math.PI/2) a += Math.PI*2;
+    const hit = slices.find(s => a >= s.start && a < s.end);
+    if (!hit) { hideTip(); return; }
+    const i = hit.i;
+    const pct = (R8[i]/total*100).toFixed(1);
+    showTip(e, `<b>${KANS[i]}</b><br>${fmtOku(R8[i])}<br>全体の ${pct}%`);
+  });
+  c.addEventListener('mouseleave', hideTip);
+})();
+
+// ============================================================
+// Horizontal bar (分野別金額)
+// ============================================================
+(function() {
+  const c = document.getElementById('hbarCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const sortedIdx = R8.map((_,i)=>i).sort((a,b)=>R8[b]-R8[a]);
+  const PAD = {l:90*dpr,r:70*dpr,t:10*dpr,b:10*dpr};
+  const BAR_H = 16*dpr, GAP = 8*dpr;
+
+  function resize() {
+    const rect = c.getBoundingClientRect();
+    c.width = rect.width * dpr;
+    const rows = KANS.length;
+    c.height = (BAR_H + GAP) * rows + PAD.t + PAD.b + 20*dpr;
+  }
+  resize();
+
+  const hitZones = [];
+  function draw() {
+    const W = c.width, H = c.height;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    hitZones.length = 0;
+    const maxVal = R8[sortedIdx[0]];
+    const areaW = W - PAD.l - PAD.r;
+
+    sortedIdx.forEach((idx,row) => {
+      const y = PAD.t + row*(BAR_H+GAP);
+      const bw = R8[idx]/maxVal * areaW;
+      // label
+      ctx.fillStyle = '#64748B';
+      ctx.font = `${11*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(KANS[idx], PAD.l - 6*dpr, y + BAR_H/2);
+      // bar
+      ctx.fillStyle = COLORS[idx];
+      roundRect(ctx, PAD.l, y, bw, BAR_H, 3*dpr);
+      ctx.fill();
+      // value
+      ctx.fillStyle = '#1E293B';
+      ctx.font = `bold ${10*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign = 'left';
+      ctx.fillText((R8[idx]/100000).toFixed(1)+'億', PAD.l+bw+4*dpr, y+BAR_H/2);
+      hitZones.push({x:PAD.l, y, w:bw, h:BAR_H, idx});
+    });
+    return {areaW};
+  }
+
+  function roundRect(ctx,x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+    ctx.lineTo(x+w,y+h-r);ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+    ctx.lineTo(x+r,y+h);ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+    ctx.lineTo(x,y+r);ctx.quadraticCurveTo(x,y,x+r,y);ctx.closePath();
+  }
+
+  draw();
+  window.addEventListener('resize', () => { resize(); draw(); });
+
+  c.addEventListener('mousemove', e => {
+    const rect = c.getBoundingClientRect();
+    const mx = (e.clientX-rect.left)*dpr, my = (e.clientY-rect.top)*dpr;
+    const hit = hitZones.find(z => mx>=z.x && mx<=z.x+z.w+80*dpr && my>=z.y && my<=z.y+z.h);
+    if (!hit) { hideTip(); return; }
+    const i = hit.idx;
+    const pct = (R8[i]/R8.reduce((a,b)=>a+b)*100).toFixed(1);
+    showTip(e, `<b>${KANS[i]}</b><br>${fmtOku(R8[i])}<br>全体の ${pct}%`);
+  });
+  c.addEventListener('mouseleave', hideTip);
+})();
+
+// ============================================================
+// Horizontal bar (前年比増減)
+// ============================================================
+(function() {
+  const c = document.getElementById('diffCanvas');
+  const dpr = window.devicePixelRatio || 1;
+  const diffs = R8.map((v,i) => v - R7[i]);
+  const sortedIdx = diffs.map((_,i)=>i).sort((a,b)=>diffs[b]-diffs[a]);
+  const PAD = {l:100*dpr,r:80*dpr,t:14*dpr,b:14*dpr};
+  const BAR_H = 14*dpr, GAP = 8*dpr;
+
+  function resize() {
+    const rect = c.getBoundingClientRect();
+    c.width = rect.width * dpr;
+    c.height = (BAR_H+GAP)*KANS.length + PAD.t + PAD.b + 20*dpr;
+  }
+  resize();
+
+  const hitZones = [];
+  function draw() {
+    const W = c.width, H = c.height;
+    const ctx = c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    hitZones.length = 0;
+    const maxAbs = Math.max(...diffs.map(Math.abs));
+    const areaW = W - PAD.l - PAD.r;
+    const midX = PAD.l + areaW/2;
+
+    // center line
+    ctx.strokeStyle = '#E2E8F0';
+    ctx.lineWidth = 1*dpr;
+    ctx.beginPath();
+    ctx.moveTo(midX, PAD.t);
+    ctx.lineTo(midX, H - PAD.b);
+    ctx.stroke();
+    // zero label
+    ctx.fillStyle = '#94A3B8';
+    ctx.font = `${9*dpr}px Meiryo,sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.fillText('0', midX, H-2*dpr);
+
+    sortedIdx.forEach((idx,row) => {
+      const y = PAD.t + row*(BAR_H+GAP);
+      const d = diffs[idx];
+      const bw = Math.abs(d)/maxAbs * (areaW/2 - 4*dpr);
+      ctx.fillStyle = '#64748B';
+      ctx.font = `${10*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(KANS[idx], PAD.l - 6*dpr, y+BAR_H/2);
+
+      if (d >= 0) {
+        ctx.fillStyle = '#3B82F6';
+        const x = midX + 1;
+        ctx.fillRect(x, y, bw, BAR_H);
+        ctx.fillStyle = '#1E293B';
+        ctx.font = `bold ${9*dpr}px Meiryo,sans-serif`;
+        ctx.textAlign = 'left';
+        ctx.fillText('＋'+(d/1000).toFixed(0)+'M', x+bw+3*dpr, y+BAR_H/2);
+        hitZones.push({x, y, w:bw, h:BAR_H, idx, d});
+      } else {
+        ctx.fillStyle = '#F87171';
+        const bx = midX - bw - 1;
+        ctx.fillRect(bx, y, bw, BAR_H);
+        ctx.fillStyle = '#DC2626';
+        ctx.font = `bold ${9*dpr}px Meiryo,sans-serif`;
+        ctx.textAlign = 'right';
+        ctx.fillText('▼'+(Math.abs(d)/1000).toFixed(0)+'M', bx-3*dpr, y+BAR_H/2);
+        hitZones.push({x:bx, y, w:bw, h:BAR_H, idx, d});
+      }
+    });
+  }
+  draw();
+  window.addEventListener('resize', () => { resize(); draw(); });
+
+  c.addEventListener('mousemove', e => {
+    const rect = c.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*dpr, my=(e.clientY-rect.top)*dpr;
+    const hit = hitZones.find(z=>mx>=z.x-20*dpr&&mx<=z.x+z.w+80*dpr&&my>=z.y&&my<=z.y+z.h+GAP);
+    if (!hit){hideTip();return;}
+    const {idx,d} = hit;
+    const pct = (d/R7[idx]*100);
+    const sign = d>=0?'＋':'';
+    showTip(e,`<b>${KANS[idx]}</b><br>前年比 ${sign}${(d/1000).toFixed(0)}百万円<br>${sign}${pct.toFixed(1)}%`);
+  });
+  c.addEventListener('mouseleave', hideTip);
+})();
+
+// ============================================================
+// Donut (財源内訳)
+// ============================================================
+(function() {
+  const c = document.getElementById('zaigenCanvas');
+  const dpr = window.devicePixelRatio||1;
+  function resize(){const rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=280*dpr;}
+  resize();
+  const total = ZAIGEN_VALUES.reduce((a,b)=>a+b);
+
+  const legendEl = document.getElementById('zaigenLegend');
+  ZAIGEN_LABELS.forEach((k,i)=>{
+    const pct=(ZAIGEN_VALUES[i]/total*100).toFixed(1);
+    const div=document.createElement('div');div.className='legend-item';
+    div.innerHTML=`<div class="legend-dot" style="background:${ZAIGEN_COLORS[i]}"></div>${k} ${pct}%`;
+    legendEl.appendChild(div);
+  });
+
+  const slices = [];
+  function draw(){
+    const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const cx=W/2,cy=H/2,R=Math.min(cx,cy)*0.82,ri=R*0.55;
+    let angle=-Math.PI/2;
+    slices.length=0;
+    ZAIGEN_VALUES.forEach((v,i)=>{
+      const span=v/total*Math.PI*2;
+      slices.push({start:angle,end:angle+span,i});
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,angle,angle+span);ctx.closePath();
+      ctx.fillStyle=ZAIGEN_COLORS[i];ctx.fill();
+      angle+=span;
+    });
+    ctx.beginPath();ctx.arc(cx,cy,ri,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ctx.fillStyle='#1E293B';ctx.font=`bold ${Math.round(R*.20)}px Meiryo,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('546億円',cx,cy-R*.07);
+    ctx.font=`${Math.round(R*.12)}px Meiryo,sans-serif`;ctx.fillStyle='#64748B';
+    ctx.fillText('財源合計',cx,cy+R*.14);
+    return{cx,cy,R,ri};
+  }
+
+  let st=draw();
+  window.addEventListener('resize',()=>{resize();st=draw();});
+
+  c.addEventListener('mousemove',e=>{
+    const rect=c.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*dpr,my=(e.clientY-rect.top)*dpr;
+    const{cx,cy,R,ri}=st;
+    const dx=mx-cx,dy=my-cy,dist=Math.sqrt(dx*dx+dy*dy);
+    if(dist<ri||dist>R){hideTip();return;}
+    let a=Math.atan2(dy,dx);if(a<-Math.PI/2)a+=Math.PI*2;
+    const hit=slices.find(s=>a>=s.start&&a<s.end);
+    if(!hit){hideTip();return;}
+    const i=hit.i;
+    const pct=(ZAIGEN_VALUES[i]/total*100).toFixed(1);
+    showTip(e,`<b>${ZAIGEN_LABELS[i]}</b><br>${fmtOku(ZAIGEN_VALUES[i])}<br>全体の ${pct}%`);
+  });
+  c.addEventListener('mouseleave',hideTip);
+})();
+
+// ============================================================
+// Per capita cards
+// ============================================================
+(function(){
+  const maxVal = Math.max(...R8);
+  const sorted = R8.map((_,i)=>i).sort((a,b)=>R8[b]-R8[a]);
+  const container = document.getElementById('percapGrid');
+  sorted.forEach(i=>{
+    const perCap = Math.round(R8[i]*1000/POPULATION);
+    const pct = Math.round(R8[i]/maxVal*100);
+    const div=document.createElement('div');div.className='pc-item';
+    div.innerHTML=`<div class="pc-kan">${KANS[i]}</div><div class="pc-val">${perCap.toLocaleString()}円</div><div class="pc-bar-bg"><div class="pc-bar-fill" style="width:${pct}%;background:${COLORS[i]};"></div></div>`;
+    container.appendChild(div);
+  });
+})();
+
+// ============================================================
+// Grouped bar (R7 vs R8)
+// ============================================================
+(function(){
+  const c = document.getElementById('compareCanvas');
+  const dpr = window.devicePixelRatio||1;
+  const MAIN = [2,9,1,3,7,10,8]; // 民生費,教育費,総務費,衛生費,土木費,公債費,消防費
+  const LABELS = MAIN.map(i=>KANS[i]);
+  const V8 = MAIN.map(i=>R8[i]);
+  const V7 = MAIN.map(i=>R7[i]);
+  const PAD={l:20*dpr,r:20*dpr,t:20*dpr,b:50*dpr};
+
+  function resize(){const rect=c.getBoundingClientRect();c.width=rect.width*dpr;c.height=300*dpr;}
+  resize();
+
+  const hitZones=[];
+  function draw(){
+    const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    hitZones.length=0;
+    const n=MAIN.length;
+    const maxV=Math.max(...V8,...V7);
+    const areaW=W-PAD.l-PAD.r,areaH=H-PAD.t-PAD.b;
+    const groupW=areaW/n;
+    const barW=groupW*0.3,gap=groupW*0.05;
+
+    // grid lines
+    [0.25,0.5,0.75,1].forEach(f=>{
+      const y=PAD.t+areaH*(1-f);
+      ctx.strokeStyle='#F1F5F9';ctx.lineWidth=1*dpr;
+      ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(W-PAD.r,y);ctx.stroke();
+      ctx.fillStyle='#94A3B8';ctx.font=`${9*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.fillText(Math.round(maxV*f/100000)+'億',PAD.l-2*dpr,y);
+    });
+
+    LABELS.forEach((lbl,j)=>{
+      const gx=PAD.l+groupW*j+groupW/2;
+      // R7 bar
+      const h7=V7[j]/maxV*areaH;
+      const x7=gx-barW-gap/2;
+      const y7=PAD.t+areaH-h7;
+      ctx.fillStyle='rgba(148,163,184,0.7)';
+      ctx.fillRect(x7,y7,barW,h7);
+      hitZones.push({x:x7,y:y7,w:barW,h:h7,lbl,v:V7[j],yr:'R7'});
+      // R8 bar
+      const h8=V8[j]/maxV*areaH;
+      const x8=gx+gap/2;
+      const y8=PAD.t+areaH-h8;
+      ctx.fillStyle=COLORS[MAIN[j]]+'CC';
+      ctx.fillRect(x8,y8,barW,h8);
+      hitZones.push({x:x8,y:y8,w:barW,h:h8,lbl,v:V8[j],yr:'R8'});
+      // label
+      ctx.fillStyle='#64748B';ctx.font=`${10*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(lbl,gx,PAD.t+areaH+6*dpr);
+    });
+    // legend
+    const lx=W-PAD.r-150*dpr,ly=PAD.t;
+    ctx.fillStyle='rgba(148,163,184,0.7)';ctx.fillRect(lx,ly,14*dpr,10*dpr);
+    ctx.fillStyle='#64748B';ctx.font=`${10*dpr}px Meiryo,sans-serif`;ctx.textAlign='left';
+    ctx.fillText('令和7年度',lx+17*dpr,ly+1*dpr);
+    ctx.fillStyle='#2563EB';ctx.fillRect(lx,ly+16*dpr,14*dpr,10*dpr);
+    ctx.fillStyle='#64748B';ctx.fillText('令和8年度',lx+17*dpr,ly+17*dpr);
+  }
+  draw();
+  window.addEventListener('resize',()=>{resize();draw();});
+
+  c.addEventListener('mousemove',e=>{
+    const rect=c.getBoundingClientRect();
+    const mx=(e.clientX-rect.left)*dpr,my=(e.clientY-rect.top)*dpr;
+    const hit=hitZones.find(z=>mx>=z.x&&mx<=z.x+z.w&&my>=z.y&&my<=z.y+z.h);
+    if(!hit){hideTip();return;}
+    showTip(e,`<b>${hit.lbl}（${hit.yr}）</b><br>${fmtOku(hit.v)}`);
+  });
+  c.addEventListener('mouseleave',hideTip);
+})();
+
+// ============================================================
+// 経年データ
+// ============================================================
+const YEARS = ['R5','R6','R7','R8'];
+const YEARLY_TOTAL = [48645000, 54132000, 52381901, 54600000]; // 千円
+const YEARLY_KAN = {
+  '民生費': [25519408, 26531107, 28028251, 29050947],
+  '教育費': [3987843,  4454677,  5858606,  5824012],
+  '土木費': [4008289,  3854601,  3331981,  4595425],
+  '衛生費': [6121744,  10161415, 4780188,  5094899],
+};
+const KAN4_COLORS = ['#2563EB','#DC2626','#CA8A04','#0891B2'];
+
+// 性質別（千円）
+const SEISHITSU = {
+  gimu:  [15442000, 18265000, 19003000, 20123000],
+  toshi: [1260000,  6667000,  1469000,  1480000],
+  sonota:[23764000, 28968000, 31312000, 32917000],
+};
+
+// ============================================================
+// 経年トレンド：総額折れ線
+// ============================================================
+(function(){
+  const c = document.getElementById('trendCanvas');
+  const dpr = window.devicePixelRatio||1;
+  function resize(){const r=c.getBoundingClientRect();c.width=r.width*dpr;c.height=260*dpr;}
+  resize();
+
+  function draw(){
+    const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const PAD={l:50*dpr,r:20*dpr,t:20*dpr,b:36*dpr};
+    const aW=W-PAD.l-PAD.r, aH=H-PAD.t-PAD.b;
+    const n=YEARS.length;
+    const minV=460*100000, maxV=560*100000;
+
+    // grid
+    [0,0.25,0.5,0.75,1].forEach(f=>{
+      const y=PAD.t+aH*(1-f);
+      ctx.strokeStyle='#F1F5F9';ctx.lineWidth=1*dpr;
+      ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(W-PAD.r,y);ctx.stroke();
+      const val=minV+(maxV-minV)*f;
+      ctx.fillStyle='#94A3B8';ctx.font=`${9*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.fillText(Math.round(val/100000)+'億',PAD.l-4*dpr,y);
+    });
+
+    const pts = YEARLY_TOTAL.map((v,i)=>({
+      x: PAD.l + i*(aW/(n-1)),
+      y: PAD.t + aH*(1 - (v-minV)/(maxV-minV))
+    }));
+
+    // area fill
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, PAD.t+aH);
+    pts.forEach(p=>ctx.lineTo(p.x,p.y));
+    ctx.lineTo(pts[pts.length-1].x, PAD.t+aH);
+    ctx.closePath();
+    const grad=ctx.createLinearGradient(0,PAD.t,0,PAD.t+aH);
+    grad.addColorStop(0,'rgba(37,99,235,.18)');
+    grad.addColorStop(1,'rgba(37,99,235,.02)');
+    ctx.fillStyle=grad;ctx.fill();
+
+    // line
+    ctx.beginPath();
+    pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+    ctx.strokeStyle='#2563EB';ctx.lineWidth=2.5*dpr;ctx.lineJoin='round';
+    ctx.stroke();
+
+    // dots + labels
+    pts.forEach((p,i)=>{
+      ctx.beginPath();ctx.arc(p.x,p.y,4*dpr,0,Math.PI*2);
+      ctx.fillStyle='#2563EB';ctx.fill();
+      ctx.strokeStyle='#fff';ctx.lineWidth=1.5*dpr;ctx.stroke();
+
+      ctx.fillStyle='#1E293B';ctx.font=`bold ${10*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText((YEARLY_TOTAL[i]/100000).toFixed(1)+'億',p.x,p.y-6*dpr);
+
+      ctx.fillStyle='#64748B';ctx.font=`${10*dpr}px Meiryo,sans-serif`;
+      ctx.textBaseline='top';
+      ctx.fillText(YEARS[i],p.x,PAD.t+aH+6*dpr);
+    });
+  }
+  draw();
+  window.addEventListener('resize',()=>{resize();draw();});
+})();
+
+// ============================================================
+// 経年トレンド：主要4分野
+// ============================================================
+(function(){
+  const c = document.getElementById('trendKanCanvas');
+  const dpr = window.devicePixelRatio||1;
+  function resize(){const r=c.getBoundingClientRect();c.width=r.width*dpr;c.height=260*dpr;}
+  resize();
+
+  const kanKeys = Object.keys(YEARLY_KAN);
+  const legendEl = document.getElementById('trendKanLegend');
+  kanKeys.forEach((k,i)=>{
+    const d=document.createElement('div');d.className='legend-item';
+    d.innerHTML=`<div class="legend-dot" style="background:${KAN4_COLORS[i]}"></div>${k}`;
+    legendEl.appendChild(d);
+  });
+
+  function draw(){
+    const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const PAD={l:50*dpr,r:20*dpr,t:20*dpr,b:36*dpr};
+    const aW=W-PAD.l-PAD.r,aH=H-PAD.t-PAD.b;
+    const n=YEARS.length;
+    const allVals=Object.values(YEARLY_KAN).flat();
+    const minV=0, maxV=Math.max(...allVals)*1.15;
+
+    [0,0.25,0.5,0.75,1].forEach(f=>{
+      const y=PAD.t+aH*(1-f);
+      ctx.strokeStyle='#F1F5F9';ctx.lineWidth=1*dpr;
+      ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(W-PAD.r,y);ctx.stroke();
+      ctx.fillStyle='#94A3B8';ctx.font=`${9*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.fillText(Math.round((minV+(maxV-minV)*f)/100000)+'億',PAD.l-4*dpr,y);
+    });
+
+    kanKeys.forEach((k,ki)=>{
+      const vals=YEARLY_KAN[k];
+      const pts=vals.map((v,i)=>({x:PAD.l+i*(aW/(n-1)),y:PAD.t+aH*(1-(v-minV)/(maxV-minV))}));
+      ctx.beginPath();
+      pts.forEach((p,i)=>i===0?ctx.moveTo(p.x,p.y):ctx.lineTo(p.x,p.y));
+      ctx.strokeStyle=KAN4_COLORS[ki];ctx.lineWidth=2*dpr;ctx.lineJoin='round';
+      ctx.setLineDash([]);ctx.stroke();
+      pts.forEach(p=>{
+        ctx.beginPath();ctx.arc(p.x,p.y,3*dpr,0,Math.PI*2);
+        ctx.fillStyle=KAN4_COLORS[ki];ctx.fill();
+        ctx.strokeStyle='#fff';ctx.lineWidth=1*dpr;ctx.stroke();
+      });
+      // end label
+      const last=pts[pts.length-1];
+      ctx.fillStyle=KAN4_COLORS[ki];ctx.font=`bold ${9*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='left';ctx.textBaseline='middle';
+      ctx.fillText(k, last.x+5*dpr, last.y);
+    });
+
+    YEARS.forEach((yr,i)=>{
+      const x=PAD.l+i*(aW/(n-1));
+      ctx.fillStyle='#64748B';ctx.font=`${10*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='top';
+      ctx.fillText(yr,x,PAD.t+aH+6*dpr);
+    });
+  }
+  draw();
+  window.addEventListener('resize',()=>{resize();draw();});
+})();
+
+// ============================================================
+// 性質別：積み上げ棒グラフ
+// ============================================================
+(function(){
+  const c = document.getElementById('seishitsuCanvas');
+  const dpr = window.devicePixelRatio||1;
+  function resize(){const r=c.getBoundingClientRect();c.width=r.width*dpr;c.height=260*dpr;}
+  resize();
+
+  const SEI_COLORS = ['#2563EB','#F59E0B','#6EE7B7'];
+  const SEI_KEYS = ['gimu','toshi','sonota'];
+
+  function draw(){
+    const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const PAD={l:50*dpr,r:20*dpr,t:14*dpr,b:36*dpr};
+    const aW=W-PAD.l-PAD.r,aH=H-PAD.t-PAD.b;
+    const n=YEARS.length;
+    const totals=YEARS.map((_,i)=>SEI_KEYS.reduce((s,k)=>s+SEISHITSU[k][i],0));
+    const maxV=Math.max(...totals)*1.1;
+    const barW=aW/(n*1.6);
+
+    [0,0.25,0.5,0.75,1].forEach(f=>{
+      const y=PAD.t+aH*(1-f);
+      ctx.strokeStyle='#F1F5F9';ctx.lineWidth=1*dpr;
+      ctx.beginPath();ctx.moveTo(PAD.l,y);ctx.lineTo(W-PAD.r,y);ctx.stroke();
+      ctx.fillStyle='#94A3B8';ctx.font=`${9*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='right';ctx.textBaseline='middle';
+      ctx.fillText(Math.round(maxV*f/100000)+'億',PAD.l-4*dpr,y);
+    });
+
+    YEARS.forEach((yr,i)=>{
+      const cx=PAD.l+aW*(i/(n-1));
+      let base=PAD.t+aH;
+      SEI_KEYS.forEach((k,ki)=>{
+        const v=SEISHITSU[k][i];
+        const bh=v/maxV*aH;
+        ctx.fillStyle=SEI_COLORS[ki];
+        ctx.fillRect(cx-barW/2, base-bh, barW, bh);
+        base-=bh;
+      });
+      // total label
+      const total=totals[i];
+      ctx.fillStyle='#1E293B';ctx.font=`bold ${9*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='bottom';
+      ctx.fillText((total/100000).toFixed(1)+'億',cx,base-2*dpr);
+
+      ctx.fillStyle='#64748B';ctx.font=`${10*dpr}px Meiryo,sans-serif`;
+      ctx.textBaseline='top';
+      ctx.fillText(yr,cx,PAD.t+aH+6*dpr);
+    });
+  }
+  draw();
+  window.addEventListener('resize',()=>{resize();draw();});
+})();
+
+// ============================================================
+// 性質別：R8ドーナツ
+// ============================================================
+(function(){
+  const c = document.getElementById('seishitsuDonutCanvas');
+  const dpr = window.devicePixelRatio||1;
+  function resize(){const r=c.getBoundingClientRect();c.width=r.width*dpr;c.height=220*dpr;}
+  resize();
+
+  const vals=[SEISHITSU.gimu[3],SEISHITSU.toshi[3],SEISHITSU.sonota[3]];
+  const labels=['義務的経費','投資的経費','その他経費'];
+  const colors=['#2563EB','#F59E0B','#6EE7B7'];
+  const total=vals.reduce((a,b)=>a+b);
+  const slices=[];
+
+  function draw(){
+    const W=c.width,H=c.height;
+    const ctx=c.getContext('2d');
+    ctx.clearRect(0,0,W,H);
+    const cx=W/2,cy=H/2,R=Math.min(cx,cy)*0.85,ri=R*0.56;
+    let angle=-Math.PI/2;
+    slices.length=0;
+    vals.forEach((v,i)=>{
+      const span=v/total*Math.PI*2;
+      slices.push({start:angle,end:angle+span,i});
+      ctx.beginPath();ctx.moveTo(cx,cy);ctx.arc(cx,cy,R,angle,angle+span);ctx.closePath();
+      ctx.fillStyle=colors[i];ctx.fill();
+      // label on arc
+      const mid=angle+span/2;
+      const lx=cx+Math.cos(mid)*(R*0.75),ly=cy+Math.sin(mid)*(R*0.75);
+      ctx.fillStyle='#fff';ctx.font=`bold ${10*dpr}px Meiryo,sans-serif`;
+      ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText((v/total*100).toFixed(1)+'%',lx,ly);
+      angle+=span;
+    });
+    ctx.beginPath();ctx.arc(cx,cy,ri,0,Math.PI*2);ctx.fillStyle='#fff';ctx.fill();
+    ctx.fillStyle='#1E293B';ctx.font=`bold ${Math.round(R*.18)}px Meiryo,sans-serif`;
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    ctx.fillText('R8',cx,cy-R*.08);
+    ctx.font=`${Math.round(R*.12)}px Meiryo,sans-serif`;ctx.fillStyle='#64748B';
+    ctx.fillText('性質別',cx,cy+R*.14);
+  }
+  draw();
+  window.addEventListener('resize',()=>{resize();draw();});
+})();
+
+// ============================================================
+// 主要新規事業カード（15件）
+// ============================================================
+(function(){
+  const projects = [
+    {name:'こども家庭センター設置', kan:'衛生費', amt:238848, desc:'妊婦支援給付金100,000千円・ファーストバースデーサポート記念品等を含む最大規模の新規事業。子育て世帯への包括支援の新体制。'},
+    {name:'市長選挙執行', kan:'総務費', amt:63766, desc:'令和8年度実施の市長選挙執行経費。選挙管理に係る全般的な費用。'},
+    {name:'乳児等通園支援（こども誰でも通園）', kan:'民生費', amt:31081, desc:'保育所未入所の乳児を対象に月一定時間の通園を保障する新制度。市立保育園に委託（27,879千円）。'},
+    {name:'障害者交通手当支給', kan:'民生費', amt:33096, desc:'障害のある方への交通手当支給。扶助費32,763千円が中心。'},
+    {name:'小児インフルエンザ予防接種助成', kan:'衛生費', amt:21120, desc:'生後6か月〜13歳未満への任意接種費用を助成。約9,745回見込み（注射2,000円・経鼻4,000円）。'},
+    {name:'高齢者食事支援サービス', kan:'民生費', amt:19012, desc:'高齢者への食事配送サービスを新規に委託実施。一人暮らし高齢者等の栄養確保を支援。'},
+    {name:'RSウイルスワクチン接種', kan:'衛生費', amt:16000, desc:'妊娠28〜36週の妊婦を対象とするR8年4月〜の定期接種。自己負担なし。約472回見込み。'},
+    {name:'緑地の整備（滄浪泉園）', kan:'土木費', amt:16683, desc:'滄浪泉園緑地の橋りょう改修工事（15,593千円）および埋蔵文化財発掘調査委託（1,090千円）。'},
+    {name:'在宅医療推進強化', kan:'民生費', amt:7850, desc:'東京都補助からR8より市単独移行。夜間・休日の在宅診療を支える医療連携サポートセンターを市医師会に委託。'},
+    {name:'認知症当事者の社会参加推進', kan:'民生費', amt:5307, desc:'認知症のある人の社会参加を支援する委託事業。地域での居場所づくりを推進。'},
+    {name:'公用車管理の新設', kan:'総務費', amt:20063, desc:'公用車の維持管理（駐車場借上・保険・重量税等）を独立事業として新設。透明性向上を目的とする。'},
+    {name:'空家等対策協議会の設置', kan:'土木費', amt:2179, desc:'空家等対策協議会（11人）の設置・運営、特定空家等立入調査委託、住宅相談員への謝礼等。'},
+    {name:'ICT機器による高齢者見守り', kan:'民生費', amt:2266, desc:'ICT機器で独居高齢者等を見守るサービスを委託（委託料2,244千円）。令和8年度より開始。'},
+    {name:'学校部活動の地域展開', kan:'教育費', amt:1854, desc:'部活動の地域移行に向けた実証実験。複数校の生徒が参加する土日活動を試行。教員の参加は原則不要。'},
+    {name:'介護予防・フレイル予防啓発強化', kan:'民生費', amt:483, desc:'R8年度開始のフレイルチェック会（年1回・定員30人）に係る啓発・印刷費。'},
+  ];
+
+  const KAN_TAG_COLORS = {
+    '衛生費': {bg:'#ECFDF5',color:'#065F46'},
+    '民生費': {bg:'#EFF6FF',color:'#1D4ED8'},
+    '総務費': {bg:'#F5F3FF',color:'#6D28D9'},
+    '土木費': {bg:'#FFFBEB',color:'#92400E'},
+    '教育費': {bg:'#FFF1F2',color:'#9F1239'},
+  };
+
+  const maxAmt = Math.max(...projects.map(p=>p.amt));
+  const container = document.getElementById('shinkiGrid');
+
+  projects.sort((a,b)=>b.amt-a.amt).forEach(p=>{
+    const tc = KAN_TAG_COLORS[p.kan]||{bg:'#F1F5F9',color:'#475569'};
+    const div = document.createElement('div');
+    div.className='shinki-card';
+    div.innerHTML=`
+      <div class="shinki-header">
+        <div class="shinki-name">${p.name}</div>
+        <div class="shinki-amt" style="background:${tc.bg};color:${tc.color};">${(p.amt/1000).toFixed(1)}百万円</div>
+      </div>
+      <div class="shinki-tag" style="background:${tc.bg};color:${tc.color};">${p.kan}</div>
+      <div class="shinki-desc">${p.desc}</div>
+    `;
+    container.appendChild(div);
+  });
+})();
+</script>
+</body>
+</html>
