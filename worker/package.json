@@ -1,0 +1,15 @@
+{
+  "name": "yosan-ai",
+  "version": "1.0.0",
+  "private": true,
+  "description": "よさんラボAI検索バックエンド（Cloudflare Worker + Gemini）",
+  "scripts": {
+    "login": "wrangler login",
+    "set-key": "wrangler secret put GEMINI_API_KEY",
+    "deploy": "wrangler deploy",
+    "dev": "wrangler dev"
+  },
+  "devDependencies": {
+    "wrangler": "^3.90.0"
+  }
+}
