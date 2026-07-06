@@ -1,0 +1,9 @@
+name = "yosan-ai"
+main = "worker.js"
+compatibility_date = "2026-01-01"
+
+# デプロイ手順:
+#   wrangler secret put GEMINI_API_KEY   # Gemini APIキーを対話入力
+#   wrangler deploy
+# 発行URL（例: https://yosan-ai.<subdomain>.workers.dev）を
+# site/index.html の const AI_ENDPOINT に設定する。
