@@ -91,7 +91,25 @@ trend = {
     'kans': [{'n': k, 'v': [year_kan[y].get(k, 0) for y in YEARS]} for k in KAN_ORDER],
 }
 
-out = {'total': total, 'year': 'R8', 'tree': tree, 'flat': flat, 'trend': trend}
+# ── 歳入（税金はどこから来る）──
+JISHU = {'市税', '分担金及び負担金', '使用料及び手数料', '財産収入', '寄附金',
+         '繰入金', '繰越金', '諸収入'}  # 自主財源（残りは依存財源）
+rev = json.load(open(os.path.join(ROOT, 'json', '歳入構造_R8.json'), encoding='utf-8'))
+rev_kan = OrderedDict()
+for m in rev:
+    rev_kan[m['款名']] = rev_kan.get(m['款名'], 0) + (m['本年度'] or 0)
+rev_list = sorted(
+    [{'n': k, 'v': v, 'j': (k in JISHU)} for k, v in rev_kan.items()],
+    key=lambda x: -x['v'])
+revenue = {
+    'total': sum(rev_kan.values()),
+    'kans': rev_list,
+    'jishu': sum(x['v'] for x in rev_list if x['j']),
+    'izon': sum(x['v'] for x in rev_list if not x['j']),
+}
+
+out = {'total': total, 'year': 'R8', 'tree': tree, 'flat': flat, 'trend': trend,
+       'revenue': revenue}
 os.makedirs(os.path.dirname(OUT), exist_ok=True)
 with open(OUT, 'w', encoding='utf-8') as f:
     json.dump(out, f, ensure_ascii=False, separators=(',', ':'))
