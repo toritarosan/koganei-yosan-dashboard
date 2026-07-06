@@ -1,3 +1,3 @@
+# 検索エンジンのクロールを拒否（URLを知る人は閲覧可能な公開サイト）
 User-agent: *
-Allow: /
-Sitemap: https://toritarosan.github.io/koganei-yosan-dashboard/sitemap.xml
+Disallow: /
