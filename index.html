@@ -90,13 +90,14 @@ h2 .accent{color:var(--green)}
 
 /* ── ガチャ ── */
 .gacha{background:linear-gradient(150deg,#0B4A3E,#117A62);border-radius:var(--r-lg);color:#fff;
-  padding:48px 30px;text-align:center;margin-top:30px}
+  padding:48px 30px;text-align:center;margin-top:30px;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:300px}
 .gacha h3{font-size:24px;font-weight:900}
 .gacha p{opacity:.85;font-size:14px;margin-top:6px}
 .gacha button{margin-top:22px;font:700 17px 'Noto Sans JP';padding:14px 44px;border:none;border-radius:var(--r);
   background:var(--amber);color:#3A2A00;cursor:pointer;transition:transform .12s;box-shadow:0 6px 18px rgba(0,0,0,.25)}
 .gacha button:hover{transform:scale(1.05)}
-.gacha .result{margin-top:26px;min-height:120px}
+.gacha .result{margin-top:26px;min-height:0;width:100%}
 .gacha .card{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.25);border-radius:var(--r);
   padding:22px;max-width:560px;margin:0 auto;backdrop-filter:blur(4px);animation:pop .35s}
 @keyframes pop{from{transform:scale(.85);opacity:0}to{transform:scale(1);opacity:1}}
