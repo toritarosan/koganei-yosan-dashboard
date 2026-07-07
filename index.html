@@ -560,6 +560,7 @@ function buildTreemap(d){
     return e;
   });
   chart.setOption({
+    textStyle:{fontFamily:'"Noto Sans JP",sans-serif'},
     tooltip:{formatter:p=>`${p.name}<br><b>${fmt(p.value)}</b>`},
     series:[{
       type:'treemap', data, leafDepth:1, roam:false,
@@ -662,12 +663,13 @@ function buildTrend(tr){
   }
   trendChart = echarts.init(document.getElementById('trendchart'));
   trendChart.setOption({
+    textStyle:{fontFamily:'"Noto Sans JP",sans-serif'},
     tooltip:{trigger:'axis', axisPointer:{type:'shadow'},
       valueFormatter:v=>v+'億円'},
     legend:{bottom:0, itemWidth:12, itemHeight:12, textStyle:{fontSize:11}},
-    grid:{left:48, right:16, top:24, bottom:56},
+    grid:{left:52, right:16, top:40, bottom:56},
     xAxis:{type:'category', data:labels, axisTick:{show:false}},
-    yAxis:{type:'value', name:'億円', axisLabel:{formatter:'{value}'}},
+    yAxis:{type:'value', name:'億円', nameGap:16, axisLabel:{formatter:'{value}'}},
     series,
   });
   window.addEventListener('resize', ()=>trendChart && trendChart.resize());
