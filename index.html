@@ -336,7 +336,7 @@ footer a{color:var(--green-deep)}
   <!-- ═══ 新規事業ハイライト (M7) ═══ -->
   <section id="new-sec">
     <h2>令和8年度、<span class="accent">はじまります</span>。</h2>
-    <p class="lede">今年から新しく始まる20の事業。総額 <b id="np-total">—</b>。まちの「これから」がここに。</p>
+    <p class="lede">今年から新しく始まる<b id="np-count">—</b>の事業。総額 <b id="np-total">—</b>。まちの「これから」がここに。</p>
     <div class="np-grid" id="np-grid"></div>
   </section>
 
@@ -683,6 +683,7 @@ function buildTrend(tr){
 function buildNewProjects(){
   fetch('data/new_projects.json', {cache:'reload'}).then(r=>r.json()).then(np=>{
     document.getElementById('np-total').textContent = fmt(np.total);
+    document.getElementById('np-count').textContent = np.count;
     const items = [...np.items].sort((a,b)=>b.v-a.v);
     document.getElementById('np-grid').innerHTML = items.map((x,i)=>{
       const col = KAN_COLORS[x.kan] || 'var(--green)';
